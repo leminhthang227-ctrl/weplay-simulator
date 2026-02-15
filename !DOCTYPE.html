@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>WePlay Simulator v2</title>
+<style>
+body{
+    font-family:Arial;
+    background:#f4f6fb;
+    padding:20px;
+}
+
+h1{margin-top:0}
+
+.card{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    margin-bottom:15px;
+}
+
+.simGrid{
+    display:grid;
+    grid-template-columns: 380px 1fr;
+    gap:20px;
+}
+
+button{
+    border:none;
+    padding:8px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.btnTime{background:#4CAF50;color:white}
+.btnUndo{background:#f44336;color:white}
+
+.actionGrid{
+    display:grid;
+    grid-template-columns: repeat(4,1fr);
+    gap:10px;
+}
+
+.actionBtn{
+    background:#eef2ff;
+    font-size:22px;
+    padding:15px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+td,th{
+    border-bottom:1px solid #ddd;
+    padding:6px;
+    text-align:center;
+}
+
+.timeline{
+    max-height:500px;
+    overflow-y:auto;
+}
+
+</style>
+</head>
+<body>
+
+<h1>STEP 1 — GAME CONFIG</h1>
+
+<h3>Nhập số level muốn dùng</h3>
+Tree levels <input id="treeLvCount" value="5">
+Pump levels <input id="pumpLvCount" value="5">
+House levels <input id="houseLvCount" value="5">
+Door levels <input id="doorLvCount" value="5">
+<button onclick="generateTables()">Tạo bảng nhập liệu</button>
+
+<div id="tables"></div>
+
+<button onclick="startSim()">🚀 BẮT ĐẦU GIẢ LẬP</button>
+
+<hr>
+<div id="simulator" class="hidden">
+
+<h1>STEP 2 — SIMULATOR</h1>
+
+<div class="simGrid">
+
+<div>
+
+<div class="card">
+<h3>Time Control</h3>
+<button class="btnTime" onclick="nextSecond()">+1 Second</button>
+<button class="btnUndo" onclick="prevSecond()">Undo</button>
+</div>
+
+<div class="card">
+<h3>Manual Adjust</h3>
+Gold <input id="minusGold" value="50">
+<button onclick="removeGold()">💰-</button>
+<br><br>
+Water <input id="minusWater" value="50">
+<button onclick="removeWater()">💧-</button>
+</div>
+
+<div class="card">
+<h3>Actions</h3>
+<div class="actionGrid">
+<button class="actionBtn" onclick="buyTree()">🌳</button>
+<button class="actionBtn" onclick="buyPump()">💧</button>
+<button class="actionBtn" onclick="upgradeTree()">🌲⬆</button>
+<button class="actionBtn" onclick="upgradePump()">💦⬆</button>
+<button class="actionBtn" onclick="upgradeHouse()">🏠⬆</button>
+<button class="actionBtn" onclick="upgradeDoor()">🚪⬆</button>
+</div>
+
+</div>
+
+</div>
+
+<div class="card timeline">
+<table id="timeline">
+<tr>
+<th>Time</th>
+<th>Gold</th>
+<th>Water</th>
+<th>Trees</th>
+<th>Pumps</th>
+<th>House</th>
+<th>Door</th>
+</tr>
+</table>
+</div>
+
+</div>
+</div>
+
+<script>
+
+let CONFIG = {};
+let history=[];
+let state;
+
+// ===== INPUT TABLE FUNCTIONS (bị thiếu) =====
+function makeLevelTable(name,count){
+    let html=`<h3>${name}</h3>
+    <table><tr><th>Lv</th><th>Gold cost</th><th>Water cost</th><th>Production/s</th></tr>`;
+    for(let i=1;i<=count;i++){
+        html+=`<tr>
+        <td>${i}</td>
+        <td><input id="${name}_gold_${i}" value="0"></td>
+        <td><input id="${name}_water_${i}" value="0"></td>
+        <td><input id="${name}_prod_${i}" value="0"></td>
+        </tr>`;
+    }
+    html+="</table>";
+    return html;
+}
+
+function generateTables(){
+    tables.innerHTML =
+        makeLevelTable("tree",+treeLvCount.value)+
+        makeLevelTable("pump",+pumpLvCount.value)+
+        makeLevelTable("house",+houseLvCount.value)+
+        makeLevelTable("door",+doorLvCount.value);
+}
+
+function readTable(name,count){
+    let arr=[];
+    for(let i=1;i<=count;i++){
+        arr.push({
+            gold:+document.getElementById(`${name}_gold_${i}`).value,
+            water:+document.getElementById(`${name}_water_${i}`).value,
+            prod:+document.getElementById(`${name}_prod_${i}`).value
+        });
+    }
+    return arr;
+}
+
+// ===== FORMAT TIME =====
+function formatTime(sec){
+    let m=Math.floor(sec/60).toString().padStart(2,"0");
+    let s=(sec%60).toString().padStart(2,"0");
+    return `${m}:${s}`;
+}
+
+function startSim(){
+    CONFIG.tree=readTable("tree",+treeLvCount.value);
+    CONFIG.pump=readTable("pump",+pumpLvCount.value);
+    CONFIG.house=readTable("house",+houseLvCount.value);
+    CONFIG.door=readTable("door",+doorLvCount.value);
+
+    state={
+    time:8,
+    gold:0,
+    water:0,
+    houseLv:1,
+    doorLv:1,
+    treeLv:1,
+    pumpLv:1,
+    treeCounts:new Array(CONFIG.tree.length).fill(0),
+    pumpCounts:new Array(CONFIG.pump.length).fill(0)
+};
+
+
+    history=[JSON.parse(JSON.stringify(state))];
+    simulator.classList.remove("hidden");
+    render();
+}
+
+// ===== PRODUCTION =====
+function produceResources(){
+    let goldGain=0;
+    let waterGain=0;
+
+    // cây tạo vàng theo level hiện tại
+    goldGain += state.treeCounts[state.treeLv-1] * CONFIG.tree[state.treeLv-1].prod;
+
+    // nhà tạo vàng
+    goldGain += CONFIG.house[state.houseLv-1].prod;
+
+    // thùng nước tạo nước theo level hiện tại
+    waterGain += state.pumpCounts[state.pumpLv-1] * CONFIG.pump[state.pumpLv-1].prod;
+
+    state.gold+=goldGain;
+    state.water+=waterGain;
+}
+
+// ===== TIME CONTROL =====
+function nextSecond(){
+    produceResources();
+    state.time++;
+    history.push(JSON.parse(JSON.stringify(state)));
+    render();
+}
+
+function prevSecond(){
+    if(history.length<=1) return;
+    history.pop();
+    state=JSON.parse(JSON.stringify(history[history.length-1]));
+    timeline.deleteRow(-1);
+}
+
+// ===== ACTIONS =====
+function buyTree(){
+    let lvl=state.treeLv;
+    let cfg=CONFIG.tree[lvl-1];
+    if(state.gold>=cfg.gold && state.water>=cfg.water){
+        state.gold-=cfg.gold;
+        state.water-=cfg.water;
+        state.treeCounts[lvl-1]++;
+        renderInstant();
+    }
+}
+
+function buyPump(){
+    let lvl=state.pumpLv;
+    let cfg=CONFIG.pump[lvl-1];
+    if(state.gold>=cfg.gold && state.water>=cfg.water){
+        state.gold-=cfg.gold;
+        state.water-=cfg.water;
+        state.pumpCounts[lvl-1]++;
+        renderInstant();
+    }
+}
+
+function upgradeHouse(){
+    let lvl=state.houseLv;
+    if(lvl>=CONFIG.house.length) return;
+    let cfg=CONFIG.house[lvl];
+    if(state.gold>=cfg.gold && state.water>=cfg.water){
+        state.gold-=cfg.gold;
+        state.water-=cfg.water;
+        state.houseLv++;
+        renderInstant();
+    }
+}
+
+function upgradeDoor(){
+    let lvl=state.doorLv;
+    if(lvl>=CONFIG.door.length) return;
+    let cfg=CONFIG.door[lvl];
+    if(state.gold>=cfg.gold && state.water>=cfg.water){
+        state.gold-=cfg.gold;
+        state.water-=cfg.water;
+        state.doorLv++;
+        renderInstant();
+    }
+}
+
+function upgradeTree(){
+    let lvl=state.treeLv;
+    if(lvl>=CONFIG.tree.length) return;
+    let cfg=CONFIG.tree[lvl];
+    if(state.gold>=cfg.gold && state.water>=cfg.water){
+        state.gold-=cfg.gold;
+        state.water-=cfg.water;
+        state.treeLv++;
+        renderInstant();
+    }
+}
+
+function upgradePump(){
+    let lvl=state.pumpLv;
+    if(lvl>=CONFIG.pump.length) return;
+    let cfg=CONFIG.pump[lvl];
+    if(state.gold>=cfg.gold && state.water>=cfg.water){
+        state.gold-=cfg.gold;
+        state.water-=cfg.water;
+        state.pumpLv++;
+        renderInstant();
+    }
+}
+
+// ===== RENDER =====
+function renderInstant(){
+    timeline.deleteRow(-1);
+    render();
+}
+
+function render(){
+    let r=timeline.insertRow(-1);
+
+    r.innerHTML=`
+<td>${formatTime(state.time)}</td>
+<td>${state.gold.toFixed(1)}</td>
+<td>${state.water.toFixed(1)}</td>
+<td>Lv ${state.treeLv} (${state.treeCounts[state.treeLv-1]})</td>
+<td>Lv ${state.pumpLv} (${state.pumpCounts[state.pumpLv-1]})</td>
+<td>${state.houseLv}</td>
+<td>${state.doorLv}</td>`;
+
+
+    r.innerHTML=`
+    <td>${formatTime(state.time)}</td>
+    <td>${state.gold.toFixed(1)}</td>
+    <td>${state.water.toFixed(1)}</td>
+    <td>${treeInfo}</td>
+    <td>${pumpInfo}</td>
+    <td>${state.houseLv}</td>
+    <td>${state.doorLv}</td>`;
+}
+
+</script>
