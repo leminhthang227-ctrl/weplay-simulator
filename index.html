@@ -107,8 +107,10 @@ td:nth-child(5){
 
     /* chuyển grid 2 cột → 1 cột */
     .simGrid{
-        grid-template-columns: 1fr;
-    }
+    display:flex;
+    flex-direction:column;
+}
+
 
     /* timeline xuống dưới */
     .rightPanel{
@@ -611,6 +613,7 @@ function render(){
 
 
 </script>
+
 
 
 
