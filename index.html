@@ -275,27 +275,26 @@ function formatTime(sec){
 }
 
 function startSim(){
-    CONFIG.tree=readTable("tree",+treeLvCount.value);
-    CONFIG.pump=readTable("pump",+pumpLvCount.value);
-    CONFIG.house=readTable("house",+houseLvCount.value);
-    CONFIG.door=readTable("door",+doorLvCount.value);
+    CONFIG.tree  = readTable("tree",+treeLvCount.value);
+    CONFIG.pump  = readTable("pump",+pumpLvCount.value);
+    CONFIG.house = readTable("house",+houseLvCount.value);
+    CONFIG.door  = readTable("door",+doorLvCount.value);
 
     state={
-    time:8,
-    gold:0,
-    water:0,
-    houseLv:1,
-    doorLv:1,
-    trees:[],   // ⭐ danh sách từng cây
-    pumps:[]    // ⭐ danh sách từng thùng nước
-    populateUpgradeSelectors();
-
-};
-
-
+        time:8,
+        gold:0,
+        water:0,
+        houseLv:1,
+        doorLv:1,
+        trees:[],
+        pumps:[]
+    };
 
     history=[JSON.parse(JSON.stringify(state))];
+
     simulator.classList.remove("hidden");
+
+    populateUpgradeSelectors();   // ⭐ đặt ở đây mới đúng
     render();
 }
 
@@ -496,6 +495,7 @@ function render(){
 
 
 </script>
+
 
 
 
