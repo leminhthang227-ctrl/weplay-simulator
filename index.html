@@ -153,6 +153,26 @@ td:nth-child(5){
     }
 }
 
+.timelineWindow{
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    width:220px;
+    background:white;
+    border-radius:12px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.25);
+    z-index:999;
+}
+
+.timelineHeader{
+    background:#4CAF50;
+    color:white;
+    padding:8px;
+    border-radius:12px 12px 0 0;
+    cursor:move;
+    font-weight:bold;
+}
+
 </style>
 </head>
 <body>
@@ -164,6 +184,8 @@ Tree levels <input id="treeLvCount" value="5">
 Pump levels <input id="pumpLvCount" value="5">
 House levels <input id="houseLvCount" value="5">
 Door levels <input id="doorLvCount" value="5">
+Gun levels <input id="gunLvCount" value="5">
+
 
 <button onclick="generateTables()">Tạo bảng nhập liệu</button>
 <button onclick="saveConfig()">💾 Lưu config</button>
@@ -184,24 +206,22 @@ Door levels <input id="doorLvCount" value="5">
 
 <div class="leftPanel">
 
-
-<div class="card">
-<h3>Time Control</h3>
-<button class="btnTime" onclick="nextSecond()">+1 Second</button>
-<button class="btnUndo" onclick="prevSecond()">Undo</button>
-</div>
-
-<div class="card">
-<h3>Manual Adjust</h3>
-Gold <input id="minusGold" value="50">
-<button onclick="removeGold()">💰-</button>
-<br><br>
-Water <input id="minusWater" value="50">
-<button onclick="removeWater()">💧-</button>
-</div>
-
 <div class="card">
 <h3>Actions</h3>
+<div class="card">
+<h3>🔫 Trang bị súng</h3>
+
+<select id="gunBuySelect"></select>
+<button onclick="buyGun()">Mua súng</button>
+
+<br><br>
+
+<select id="gunUpgradeSelect"></select>
+<button onclick="upgradeGun()">Nâng cấp súng</button>
+
+<p id="gunStatus">Chưa có súng</p>
+</div>
+
 <div class="actionGrid">
 
 <button class="actionBtn" onclick="buyTree()">🌳</button>
@@ -276,8 +296,11 @@ function generateTables(){
         makeLevelTable("tree",+treeLvCount.value)+
         makeLevelTable("pump",+pumpLvCount.value)+
         makeLevelTable("house",+houseLvCount.value)+
-        makeLevelTable("door",+doorLvCount.value);
+        makeLevelTable("door",+doorLvCount.value)+
+        makeLevelTable("gun",+gunLvCount.value);
 }
+
+
 
 function readTable(name,count){
     let arr=[];
@@ -294,12 +317,13 @@ function readTable(name,count){
 
 function saveConfig(){
     let configData = {
-        treeLvCount: +treeLvCount.value,
-        pumpLvCount: +pumpLvCount.value,
-        houseLvCount: +houseLvCount.value,
-        doorLvCount: +doorLvCount.value,
-        tables: {}
-    };
+    treeLvCount: +treeLvCount.value,
+    pumpLvCount: +pumpLvCount.value,
+    houseLvCount: +houseLvCount.value,
+    doorLvCount: +doorLvCount.value,
+    gunLvCount: +gunLvCount.value,
+    tables: {}
+};
 
     function readTableValues(name,count){
         let arr=[];
@@ -318,6 +342,8 @@ function saveConfig(){
     configData.tables.pump  = readTableValues("pump",  configData.pumpLvCount);
     configData.tables.house = readTableValues("house", configData.houseLvCount);
     configData.tables.door  = readTableValues("door",  configData.doorLvCount);
+    configData.tables.gun = readTableValues("gun", configData.gunLvCount);
+
 
     localStorage.setItem("weplayConfig", JSON.stringify(configData));
     alert("Đã lưu config!");
@@ -337,6 +363,9 @@ function loadConfig(){
     pumpLvCount.value  = data.pumpLvCount;
     houseLvCount.value = data.houseLvCount;
     doorLvCount.value  = data.doorLvCount;
+    gunLvCount.value   = data.gunLvCount;
+
+    
 
     // tạo lại bảng
     generateTables();
@@ -355,6 +384,8 @@ function loadConfig(){
     fillTable("pump",  data.tables.pump);
     fillTable("house", data.tables.house);
     fillTable("door",  data.tables.door);
+    fillTable("gun",  data.tables.gun);
+
 
     alert("Đã tải config!");
 }
@@ -395,19 +426,23 @@ function formatTime(sec){
 
 function startSim(){
     CONFIG.tree  = readTable("tree",+treeLvCount.value);
-    CONFIG.pump  = readTable("pump",+pumpLvCount.value);
-    CONFIG.house = readTable("house",+houseLvCount.value);
-    CONFIG.door  = readTable("door",+doorLvCount.value);
+	CONFIG.pump  = readTable("pump",+pumpLvCount.value);
+	CONFIG.house = readTable("house",+houseLvCount.value);
+	CONFIG.door  = readTable("door",+doorLvCount.value);
+	CONFIG.gun = readTable("gun",+gunLvCount.value);
+
 
     state={
-        time:8,
-        gold:0,
-        water:0,
-        houseLv:1,
-        doorLv:1,
-        trees:[],
-        pumps:[]
-    };
+    time:8,
+    gold:0,
+    water:0,
+    houseLv:1,
+    doorLv:1,
+    trees:[],
+    pumps:[],
+    guns:[]
+};
+
 
     history=[JSON.parse(JSON.stringify(state))];
 
@@ -575,11 +610,86 @@ function populateUpgradeSelectors(){
     for(let i=1;i<=CONFIG.pump.length;i++){
         pumpSel.innerHTML += `<option value="${i}">Pump Lv ${i}</option>`;
     }
+
+    // ===== THÊM ĐOẠN NÀY NGAY TRƯỚC DẤU } =====
+    let buySel=document.getElementById("gunBuySelect");
+    let upSel=document.getElementById("gunUpgradeSelect");
+
+    buySel.innerHTML="";
+    upSel.innerHTML="";
+
+    for(let i=1;i<=CONFIG.gun.length;i++){
+        buySel.innerHTML += `<option value="${i}">Gun Lv ${i}</option>`;
+        upSel.innerHTML += `<option value="${i}">Gun Lv ${i}</option>`;
+    }
 }
+
 // ===== RENDER =====
 function renderInstant(){
-    timeline.deleteRow(-1);
-    render();
+    // nếu chưa có dòng timeline thì tạo dòng đầu
+    if(timeline.rows.length === 1){
+        render();
+        return;
+    }
+
+    // update dòng cuối thay vì xóa
+    let lastRow = timeline.rows[timeline.rows.length-1];
+
+    // ===== ĐẾM LẠI TREE/PUMP/GUN =====
+    let treeCountByLevel = new Array(CONFIG.tree.length).fill(0);
+    state.trees.forEach(lv => treeCountByLevel[lv-1]++);
+    let treeText = treeCountByLevel.map((c,i)=>`L${i+1}:${c}`).join(" | ");
+
+    let pumpCountByLevel = new Array(CONFIG.pump.length).fill(0);
+    state.pumps.forEach(lv => pumpCountByLevel[lv-1]++);
+    let pumpText = pumpCountByLevel.map((c,i)=>`L${i+1}:${c}`).join(" | ");
+
+    let gunCountByLevel = new Array(CONFIG.gun.length).fill(0);
+    state.guns.forEach(lv => gunCountByLevel[lv-1]++);
+    document.getElementById("gunStatus").innerText =
+        gunCountByLevel.map((c,i)=>`L${i+1}:${c}`).join(" | ");
+
+    lastRow.innerHTML = `
+    <td>${formatTime(state.time)}</td>
+    <td>${state.gold.toFixed(1)}</td>
+    <td>${state.water.toFixed(1)}</td>
+    <td>${treeText}</td>
+    <td>${pumpText}</td>
+    <td>${state.houseLv}</td>
+    <td>${state.doorLv}</td>`;
+}
+
+function buyGun(){
+    let lv = +document.getElementById("gunBuySelect").value;
+    let cfg = CONFIG.gun[lv-1];
+
+    if(state.gold>=cfg.gold && state.water>=cfg.water){
+        state.gold -= cfg.gold;
+        state.water -= cfg.water;
+        state.guns.push(lv);
+        renderInstant();
+    }
+}
+
+function upgradeGun(){
+    let lv = +document.getElementById("gunUpgradeSelect").value;
+    let index = state.guns.findIndex(g => g === lv);
+
+    if(index === -1){
+        alert("Không có súng level này!");
+        return;
+    }
+
+    if(lv >= CONFIG.gun.length) return;
+
+    let cfg = CONFIG.gun[lv];
+
+    if(state.gold>=cfg.gold && state.water>=cfg.water){
+        state.gold -= cfg.gold;
+        state.water -= cfg.water;
+        state.guns[index]++;
+        renderInstant();
+    }
 }
 
 function render(){
@@ -601,6 +711,12 @@ function render(){
         .map((count,i)=>`L${i+1}:${count}`)
         .join(" | ");
 
+	let gunCountByLevel = new Array(CONFIG.gun.length).fill(0);
+state.guns.forEach(lv => gunCountByLevel[lv-1]++);
+
+document.getElementById("gunStatus").innerText =
+    gunCountByLevel.map((c,i)=>`L${i+1}:${c}`).join(" | ");
+
     r.innerHTML = `
     <td>${formatTime(state.time)}</td>
     <td>${state.gold.toFixed(1)}</td>
@@ -611,20 +727,37 @@ function render(){
     <td>${state.doorLv}</td>`;
 }
 
+// DRAG TIME WINDOW (fix load DOM)
+window.addEventListener("load", ()=>{
 
+    let win = document.getElementById("timeWindow");
+    let header = win.querySelector(".timelineHeader");
+
+    let offsetX=0, offsetY=0, isDown=false;
+
+    header.onmousedown = e=>{
+        isDown=true;
+        offsetX=e.clientX-win.offsetLeft;
+        offsetY=e.clientY-win.offsetTop;
+    }
+
+    document.onmouseup = ()=> isDown=false;
+
+    document.onmousemove = e=>{
+        if(!isDown) return;
+        win.style.left=(e.clientX-offsetX)+"px";
+        win.style.top=(e.clientY-offsetY)+"px";
+        win.style.right="auto";
+        win.style.bottom="auto";
+    }
+
+});
 
 </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<div class="timelineWindow" id="timeWindow">
+    <div class="timelineHeader">⏱ Time Control</div>
+    <div style="padding:10px">
+        <button class="btnTime" onclick="nextSecond()">+1 Second</button>
+        <button class="btnUndo" onclick="prevSecond()">Undo</button>
+    </div>
+</div>
