@@ -147,7 +147,15 @@ let state;
 // ===== INPUT TABLE FUNCTIONS (bị thiếu) =====
 function makeLevelTable(name,count){
     let html=`<h3>${name}</h3>
-    <table><tr><th>Lv</th><th>Gold cost</th><th>Water cost</th><th>Production/s</th><th>Req Door Lv</th>
+    <table>
+    <tr>
+        <th>Lv</th>
+        <th>Gold cost</th>
+        <th>Water cost</th>
+        <th>Production/s</th>
+        <th>Req Door Lv</th>
+    </tr>`;
+
     for(let i=1;i<=count;i++){
         html+=`<tr>
         <td>${i}</td>
@@ -157,6 +165,7 @@ function makeLevelTable(name,count){
         <td><input id="${name}_doorReq_${i}" value="1"></td>
         </tr>`;
     }
+
     html+="</table>";
     return html;
 }
@@ -354,24 +363,16 @@ function render(){
     let r=timeline.insertRow(-1);
 
     r.innerHTML=`
-<td>${formatTime(state.time)}</td>
-<td>${state.gold.toFixed(1)}</td>
-<td>${state.water.toFixed(1)}</td>
-<td>Lv ${state.treeLv} (${state.treeCounts[state.treeLv-1]})</td>
-<td>Lv ${state.pumpLv} (${state.pumpCounts[state.pumpLv-1]})</td>
-<td>${state.houseLv}</td>
-<td>${state.doorLv}</td>`;
-
-
-    r.innerHTML=`
     <td>${formatTime(state.time)}</td>
     <td>${state.gold.toFixed(1)}</td>
     <td>${state.water.toFixed(1)}</td>
-    <td>${treeInfo}</td>
-    <td>${pumpInfo}</td>
+    <td>Lv ${state.treeLv} (${state.treeCounts[state.treeLv-1]})</td>
+    <td>Lv ${state.pumpLv} (${state.pumpCounts[state.pumpLv-1]})</td>
     <td>${state.houseLv}</td>
     <td>${state.doorLv}</td>`;
 }
 
+
 </script>
+
 
