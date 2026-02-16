@@ -147,13 +147,14 @@ let state;
 // ===== INPUT TABLE FUNCTIONS (bị thiếu) =====
 function makeLevelTable(name,count){
     let html=`<h3>${name}</h3>
-    <table><tr><th>Lv</th><th>Gold cost</th><th>Water cost</th><th>Production/s</th></tr>`;
+    <table><tr><th>Lv</th><th>Gold cost</th><th>Water cost</th><th>Production/s</th><th>Req Door Lv</th>
     for(let i=1;i<=count;i++){
         html+=`<tr>
         <td>${i}</td>
         <td><input id="${name}_gold_${i}" value="0"></td>
         <td><input id="${name}_water_${i}" value="0"></td>
         <td><input id="${name}_prod_${i}" value="0"></td>
+        <td><input id="${name}_doorReq_${i}" value="1"></td>
         </tr>`;
     }
     html+="</table>";
@@ -172,10 +173,11 @@ function readTable(name,count){
     let arr=[];
     for(let i=1;i<=count;i++){
         arr.push({
-            gold:+document.getElementById(`${name}_gold_${i}`).value,
-            water:+document.getElementById(`${name}_water_${i}`).value,
-            prod:+document.getElementById(`${name}_prod_${i}`).value
-        });
+    gold:+document.getElementById(`${name}_gold_${i}`).value,
+    water:+document.getElementById(`${name}_water_${i}`).value,
+    prod:+document.getElementById(`${name}_prod_${i}`).value,
+    doorReq:+document.getElementById(`${name}_doorReq_${i}`).value
+});
     }
     return arr;
 }
@@ -271,6 +273,9 @@ function upgradeHouse(){
     let lvl=state.houseLv;
     if(lvl>=CONFIG.house.length) return;
     let cfg=CONFIG.house[lvl];
+
+    if(state.doorLv < cfg.doorReq) return;
+
     if(state.gold>=cfg.gold && state.water>=cfg.water){
         state.gold-=cfg.gold;
         state.water-=cfg.water;
@@ -278,6 +283,7 @@ function upgradeHouse(){
         renderInstant();
     }
 }
+
 
 function upgradeDoor(){
     let lvl=state.doorLv;
@@ -292,24 +298,47 @@ function upgradeDoor(){
 }
 
 function upgradeTree(){
-    let lvl=state.treeLv;
-    if(lvl>=CONFIG.tree.length) return;
-    let cfg=CONFIG.tree[lvl];
-    if(state.gold>=cfg.gold && state.water>=cfg.water){
-        state.gold-=cfg.gold;
-        state.water-=cfg.water;
+    let lvl = state.treeLv;
+
+    // đã max level thì dừng
+    if(lvl >= CONFIG.tree.length) return;
+
+    let cfg = CONFIG.tree[lvl]; // dữ liệu level tiếp theo
+
+    // ❗ ĐIỀU KIỆN MỚI: yêu cầu level cửa
+    if(state.doorLv < cfg.doorReq){
+        alert("Cần Door Lv " + cfg.doorReq);
+        return;
+    }
+
+    // đủ tài nguyên mới nâng cấp
+    if(state.gold >= cfg.gold && state.water >= cfg.water){
+        state.gold -= cfg.gold;
+        state.water -= cfg.water;
         state.treeLv++;
         renderInstant();
     }
 }
 
+
 function upgradePump(){
-    let lvl=state.pumpLv;
-    if(lvl>=CONFIG.pump.length) return;
-    let cfg=CONFIG.pump[lvl];
-    if(state.gold>=cfg.gold && state.water>=cfg.water){
-        state.gold-=cfg.gold;
-        state.water-=cfg.water;
+    let lvl = state.pumpLv;
+
+    // đã max level thì dừng
+    if(lvl >= CONFIG.pump.length) return;
+
+    let cfg = CONFIG.pump[lvl];
+
+    // ❗ ĐIỀU KIỆN MỚI: yêu cầu level cửa
+    if(state.doorLv < cfg.doorReq){
+        alert("Cần Door Lv " + cfg.doorReq);
+        return;
+    }
+
+    // đủ tài nguyên mới nâng cấp
+    if(state.gold >= cfg.gold && state.water >= cfg.water){
+        state.gold -= cfg.gold;
+        state.water -= cfg.water;
         state.pumpLv++;
         renderInstant();
     }
@@ -345,3 +374,4 @@ function render(){
 }
 
 </script>
+
