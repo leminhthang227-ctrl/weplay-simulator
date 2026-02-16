@@ -76,8 +76,10 @@ Tree levels <input id="treeLvCount" value="5">
 Pump levels <input id="pumpLvCount" value="5">
 House levels <input id="houseLvCount" value="5">
 Door levels <input id="doorLvCount" value="5">
-<button onclick="generateTables()">Tạo bảng nhập liệu</button>
 
+<button onclick="generateTables()">Tạo bảng nhập liệu</button>
+<button onclick="saveConfig()">💾 Lưu config</button>
+<button onclick="loadConfig()">📂 Tải config</button>
 <div id="tables"></div>
 
 <button onclick="startSim()">🚀 BẮT ĐẦU GIẢ LẬP</button>
@@ -189,6 +191,36 @@ function readTable(name,count){
 });
     }
     return arr;
+}
+
+function saveConfig(){
+    let data = {
+        treeLvCount: treeLvCount.value,
+        pumpLvCount: pumpLvCount.value,
+        houseLvCount: houseLvCount.value,
+        doorLvCount: doorLvCount.value,
+        tables: tables.innerHTML
+    };
+
+    localStorage.setItem("weplayConfig", JSON.stringify(data));
+    alert("Đã lưu config!");
+}
+
+function loadConfig(){
+    let data = localStorage.getItem("weplayConfig");
+    if(!data){
+        alert("Chưa có config được lưu!");
+        return;
+    }
+
+    data = JSON.parse(data);
+
+    treeLvCount.value = data.treeLvCount;
+    pumpLvCount.value = data.pumpLvCount;
+    houseLvCount.value = data.houseLvCount;
+    doorLvCount.value = data.doorLvCount;
+
+    tables.innerHTML = data.tables;
 }
 
 // ===== FORMAT TIME =====
@@ -374,5 +406,6 @@ function render(){
 
 
 </script>
+
 
 
