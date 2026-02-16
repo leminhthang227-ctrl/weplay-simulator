@@ -22,9 +22,21 @@ h1{margin-top:0}
 
 .simGrid{
     display:grid;
-    grid-template-columns: 380px 1fr;
-    gap:20px;
+    grid-template-columns: 420px 1fr;
+    gap:25px;
+    align-items:start;
 }
+
+.leftPanel{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+.rightPanel{
+    height:75vh;
+}
+
 
 button{
     border:none;
@@ -54,6 +66,7 @@ table{
     border-collapse:collapse;
 }
 
+
 td,th{
     border-bottom:1px solid #ddd;
     padding:6px;
@@ -61,9 +74,18 @@ td,th{
 }
 
 .timeline{
-    max-height:500px;
+    max-height:75vh;
     overflow-y:auto;
+    width:100%;
 }
+
+td:nth-child(4),
+td:nth-child(5){
+    text-align:left;
+    word-break:break-word;
+    white-space:normal;
+}
+
 
 </style>
 </head>
@@ -91,7 +113,8 @@ Door levels <input id="doorLvCount" value="5">
 
 <div class="simGrid">
 
-<div>
+<div class="leftPanel">
+
 
 <div class="card">
 <h3>Time Control</h3>
@@ -129,6 +152,9 @@ Water <input id="minusWater" value="50">
 
 </div>
 
+
+
+</div>
 <div class="card timeline">
 <table id="timeline">
 <tr>
@@ -141,8 +167,6 @@ Water <input id="minusWater" value="50">
 <th>Door</th>
 </tr>
 </table>
-</div>
-
 </div>
 </div>
 
@@ -495,6 +519,7 @@ function render(){
 
 
 </script>
+
 
 
 
