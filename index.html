@@ -368,15 +368,6 @@ function upgradeTree(){
     }
 }
 
-    // đủ tài nguyên mới nâng cấp
-    if(state.gold >= cfg.gold && state.water >= cfg.water){
-        state.gold -= cfg.gold;
-        state.water -= cfg.water;
-        state.treeLv++;
-        renderInstant();
-    }
-}
-
 
 function upgradePump(){
     if(state.pumps.length==0){
@@ -400,15 +391,6 @@ function upgradePump(){
         state.gold -= cfg.gold;
         state.water -= cfg.water;
         state.pumps[index]++;
-        renderInstant();
-    }
-}
-
-    // đủ tài nguyên mới nâng cấp
-    if(state.gold >= cfg.gold && state.water >= cfg.water){
-        state.gold -= cfg.gold;
-        state.water -= cfg.water;
-        state.pumpLv++;
         renderInstant();
     }
 }
@@ -451,6 +433,7 @@ function render(){
 
 
 </script>
+
 
 
 
