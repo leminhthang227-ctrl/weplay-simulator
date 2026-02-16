@@ -242,11 +242,10 @@ function startSim(){
     water:0,
     houseLv:1,
     doorLv:1,
-    treeLv:1,
-    pumpLv:1,
-    treeCounts:new Array(CONFIG.tree.length).fill(0),
-    pumpCounts:new Array(CONFIG.pump.length).fill(0)
+    trees:[],   // ⭐ danh sách từng cây
+    pumps:[]    // ⭐ danh sách từng thùng nước
 };
+
 
 
     history=[JSON.parse(JSON.stringify(state))];
@@ -259,17 +258,21 @@ function produceResources(){
     let goldGain=0;
     let waterGain=0;
 
-    // cây tạo vàng theo level hiện tại
-    goldGain += state.treeCounts[state.treeLv-1] * CONFIG.tree[state.treeLv-1].prod;
+    // mỗi cây tạo vàng theo level riêng
+    state.trees.forEach(lv=>{
+        goldGain += CONFIG.tree[lv-1].prod;
+    });
 
     // nhà tạo vàng
     goldGain += CONFIG.house[state.houseLv-1].prod;
 
-    // thùng nước tạo nước theo level hiện tại
-    waterGain += state.pumpCounts[state.pumpLv-1] * CONFIG.pump[state.pumpLv-1].prod;
+    // mỗi pump tạo nước theo level riêng
+    state.pumps.forEach(lv=>{
+        waterGain += CONFIG.pump[lv-1].prod;
+    });
 
-    state.gold+=goldGain;
-    state.water+=waterGain;
+    state.gold += goldGain;
+    state.water += waterGain;
 }
 
 // ===== TIME CONTROL =====
@@ -289,26 +292,26 @@ function prevSecond(){
 
 // ===== ACTIONS =====
 function buyTree(){
-    let lvl=state.treeLv;
-    let cfg=CONFIG.tree[lvl-1];
+    let cfg = CONFIG.tree[0]; // mua cây lv1
     if(state.gold>=cfg.gold && state.water>=cfg.water){
-        state.gold-=cfg.gold;
-        state.water-=cfg.water;
-        state.treeCounts[lvl-1]++;
+        state.gold -= cfg.gold;
+        state.water -= cfg.water;
+        state.trees.push(1); // thêm 1 cây lv1
         renderInstant();
     }
 }
 
+
 function buyPump(){
-    let lvl=state.pumpLv;
-    let cfg=CONFIG.pump[lvl-1];
+    let cfg = CONFIG.pump[0];
     if(state.gold>=cfg.gold && state.water>=cfg.water){
-        state.gold-=cfg.gold;
-        state.water-=cfg.water;
-        state.pumpCounts[lvl-1]++;
+        state.gold -= cfg.gold;
+        state.water -= cfg.water;
+        state.pumps.push(1);
         renderInstant();
     }
 }
+
 
 function upgradeHouse(){
     let lvl=state.houseLv;
@@ -339,18 +342,31 @@ function upgradeDoor(){
 }
 
 function upgradeTree(){
-    let lvl = state.treeLv;
+    if(state.trees.length==0){
+        alert("Chưa có cây!");
+        return;
+    }
 
-    // đã max level thì dừng
-    if(lvl >= CONFIG.tree.length) return;
+    // chọn cây level thấp nhất để nâng
+    let index = state.trees.indexOf(Math.min(...state.trees));
+    let currentLv = state.trees[index];
 
-    let cfg = CONFIG.tree[lvl]; // dữ liệu level tiếp theo
+    if(currentLv >= CONFIG.tree.length) return;
 
-    // ❗ ĐIỀU KIỆN MỚI: yêu cầu level cửa
+    let cfg = CONFIG.tree[currentLv];
+
     if(state.doorLv < cfg.doorReq){
         alert("Cần Door Lv " + cfg.doorReq);
         return;
     }
+
+    if(state.gold>=cfg.gold && state.water>=cfg.water){
+        state.gold -= cfg.gold;
+        state.water -= cfg.water;
+        state.trees[index]++; // ⭐ chỉ nâng 1 cây
+        renderInstant();
+    }
+}
 
     // đủ tài nguyên mới nâng cấp
     if(state.gold >= cfg.gold && state.water >= cfg.water){
@@ -363,18 +379,30 @@ function upgradeTree(){
 
 
 function upgradePump(){
-    let lvl = state.pumpLv;
+    if(state.pumps.length==0){
+        alert("Chưa có pump!");
+        return;
+    }
 
-    // đã max level thì dừng
-    if(lvl >= CONFIG.pump.length) return;
+    let index = state.pumps.indexOf(Math.min(...state.pumps));
+    let currentLv = state.pumps[index];
 
-    let cfg = CONFIG.pump[lvl];
+    if(currentLv >= CONFIG.pump.length) return;
 
-    // ❗ ĐIỀU KIỆN MỚI: yêu cầu level cửa
+    let cfg = CONFIG.pump[currentLv];
+
     if(state.doorLv < cfg.doorReq){
         alert("Cần Door Lv " + cfg.doorReq);
         return;
     }
+
+    if(state.gold>=cfg.gold && state.water>=cfg.water){
+        state.gold -= cfg.gold;
+        state.water -= cfg.water;
+        state.pumps[index]++;
+        renderInstant();
+    }
+}
 
     // đủ tài nguyên mới nâng cấp
     if(state.gold >= cfg.gold && state.water >= cfg.water){
@@ -392,20 +420,38 @@ function renderInstant(){
 }
 
 function render(){
-    let r=timeline.insertRow(-1);
+    let r = timeline.insertRow(-1);
 
-    r.innerHTML=`
+    // ===== ĐẾM SỐ CÂY THEO LEVEL =====
+    let treeCountByLevel = new Array(CONFIG.tree.length).fill(0);
+    state.trees.forEach(lv => treeCountByLevel[lv-1]++);
+
+    let pumpCountByLevel = new Array(CONFIG.pump.length).fill(0);
+    state.pumps.forEach(lv => pumpCountByLevel[lv-1]++);
+
+    // convert thành text
+    let treeText = treeCountByLevel
+        .map((count,i)=>`L${i+1}:${count}`)
+        .join(" | ");
+
+    let pumpText = pumpCountByLevel
+        .map((count,i)=>`L${i+1}:${count}`)
+        .join(" | ");
+
+    r.innerHTML = `
     <td>${formatTime(state.time)}</td>
     <td>${state.gold.toFixed(1)}</td>
     <td>${state.water.toFixed(1)}</td>
-    <td>Lv ${state.treeLv} (${state.treeCounts[state.treeLv-1]})</td>
-    <td>Lv ${state.pumpLv} (${state.pumpCounts[state.pumpLv-1]})</td>
+    <td>${treeText}</td>
+    <td>${pumpText}</td>
     <td>${state.houseLv}</td>
     <td>${state.doorLv}</td>`;
 }
 
 
+
 </script>
+
 
 
 
