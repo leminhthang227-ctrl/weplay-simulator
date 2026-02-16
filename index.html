@@ -111,15 +111,21 @@ Water <input id="minusWater" value="50">
 <div class="card">
 <h3>Actions</h3>
 <div class="actionGrid">
+
 <button class="actionBtn" onclick="buyTree()">🌳</button>
 <button class="actionBtn" onclick="buyPump()">💧</button>
+
+<select id="treeUpgradeSelect"></select>
 <button class="actionBtn" onclick="upgradeTree()">🌲⬆</button>
+
+<select id="pumpUpgradeSelect"></select>
 <button class="actionBtn" onclick="upgradePump()">💦⬆</button>
+
 <button class="actionBtn" onclick="upgradeHouse()">🏠⬆</button>
 <button class="actionBtn" onclick="upgradeDoor()">🚪⬆</button>
-</div>
 
 </div>
+
 
 </div>
 
@@ -282,6 +288,8 @@ function startSim(){
     doorLv:1,
     trees:[],   // ⭐ danh sách từng cây
     pumps:[]    // ⭐ danh sách từng thùng nước
+    populateUpgradeSelectors();
+
 };
 
 
@@ -380,18 +388,19 @@ function upgradeDoor(){
 }
 
 function upgradeTree(){
-    if(state.trees.length==0){
-        alert("Chưa có cây!");
+    let targetLv = +document.getElementById("treeUpgradeSelect").value;
+
+    // tìm cây có level đó
+    let index = state.trees.findIndex(lv => lv === targetLv);
+
+    if(index === -1){
+        alert("Không có cây level này!");
         return;
     }
 
-    // chọn cây level thấp nhất để nâng
-    let index = state.trees.indexOf(Math.min(...state.trees));
-    let currentLv = state.trees[index];
+    if(targetLv >= CONFIG.tree.length) return;
 
-    if(currentLv >= CONFIG.tree.length) return;
-
-    let cfg = CONFIG.tree[currentLv];
+    let cfg = CONFIG.tree[targetLv];
 
     if(state.doorLv < cfg.doorReq){
         alert("Cần Door Lv " + cfg.doorReq);
@@ -401,24 +410,25 @@ function upgradeTree(){
     if(state.gold>=cfg.gold && state.water>=cfg.water){
         state.gold -= cfg.gold;
         state.water -= cfg.water;
-        state.trees[index]++; // ⭐ chỉ nâng 1 cây
+        state.trees[index]++;
         renderInstant();
     }
 }
 
 
 function upgradePump(){
-    if(state.pumps.length==0){
-        alert("Chưa có pump!");
+    let targetLv = +document.getElementById("pumpUpgradeSelect").value;
+
+    let index = state.pumps.findIndex(lv => lv === targetLv);
+
+    if(index === -1){
+        alert("Không có pump level này!");
         return;
     }
 
-    let index = state.pumps.indexOf(Math.min(...state.pumps));
-    let currentLv = state.pumps[index];
+    if(targetLv >= CONFIG.pump.length) return;
 
-    if(currentLv >= CONFIG.pump.length) return;
-
-    let cfg = CONFIG.pump[currentLv];
+    let cfg = CONFIG.pump[targetLv];
 
     if(state.doorLv < cfg.doorReq){
         alert("Cần Door Lv " + cfg.doorReq);
@@ -433,6 +443,21 @@ function upgradePump(){
     }
 }
 
+function populateUpgradeSelectors(){
+    let treeSel = document.getElementById("treeUpgradeSelect");
+    let pumpSel = document.getElementById("pumpUpgradeSelect");
+
+    treeSel.innerHTML="";
+    pumpSel.innerHTML="";
+
+    for(let i=1;i<=CONFIG.tree.length;i++){
+        treeSel.innerHTML += `<option value="${i}">Tree Lv ${i}</option>`;
+    }
+
+    for(let i=1;i<=CONFIG.pump.length;i++){
+        pumpSel.innerHTML += `<option value="${i}">Pump Lv ${i}</option>`;
+    }
+}
 // ===== RENDER =====
 function renderInstant(){
     timeline.deleteRow(-1);
@@ -471,6 +496,7 @@ function render(){
 
 
 </script>
+
 
 
 
