@@ -88,6 +88,15 @@ td:nth-child(5){
 
 /* ================= MOBILE VERSION ================= */
 @media (max-width: 900px){
+    
+    /* đổi thứ tự: control trên - timeline dưới */
+.leftPanel{
+    order:1;
+}
+
+.rightPanel{
+    order:2;
+}
 
     body{
         padding:12px;
@@ -156,6 +165,9 @@ Door levels <input id="doorLvCount" value="5">
 <button onclick="generateTables()">Tạo bảng nhập liệu</button>
 <button onclick="saveConfig()">💾 Lưu config</button>
 <button onclick="loadConfig()">📂 Tải config</button>
+<button onclick="exportConfig()">⬇ Export file</button>
+<input type="file" id="importFile" onchange="importConfig(event)">
+
 <div id="tables"></div>
 
 <button onclick="startSim()">🚀 BẮT ĐẦU GIẢ LẬP</button>
@@ -342,6 +354,32 @@ function loadConfig(){
     fillTable("door",  data.tables.door);
 
     alert("Đã tải config!");
+}
+
+function exportConfig(){
+    let data = localStorage.getItem("weplayConfig");
+    if(!data){
+        alert("Chưa có config để export");
+        return;
+    }
+
+    let blob = new Blob([data], {type:"application/json"});
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "weplay-config.json";
+    a.click();
+}
+
+function importConfig(event){
+    let file = event.target.files[0];
+    if(!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function(e){
+        localStorage.setItem("weplayConfig", e.target.result);
+        alert("Import xong! Bấm tải config.");
+    }
+    reader.readAsText(file);
 }
 
 
@@ -573,6 +611,7 @@ function render(){
 
 
 </script>
+
 
 
 
