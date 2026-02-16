@@ -194,17 +194,36 @@ function readTable(name,count){
 }
 
 function saveConfig(){
-    let data = {
-        treeLvCount: treeLvCount.value,
-        pumpLvCount: pumpLvCount.value,
-        houseLvCount: houseLvCount.value,
-        doorLvCount: doorLvCount.value,
-        tables: tables.innerHTML
+    let configData = {
+        treeLvCount: +treeLvCount.value,
+        pumpLvCount: +pumpLvCount.value,
+        houseLvCount: +houseLvCount.value,
+        doorLvCount: +doorLvCount.value,
+        tables: {}
     };
 
-    localStorage.setItem("weplayConfig", JSON.stringify(data));
+    function readTableValues(name,count){
+        let arr=[];
+        for(let i=1;i<=count;i++){
+            arr.push({
+                gold: document.getElementById(`${name}_gold_${i}`).value,
+                water: document.getElementById(`${name}_water_${i}`).value,
+                prod: document.getElementById(`${name}_prod_${i}`).value,
+                doorReq: document.getElementById(`${name}_doorReq_${i}`).value
+            });
+        }
+        return arr;
+    }
+
+    configData.tables.tree  = readTableValues("tree",  configData.treeLvCount);
+    configData.tables.pump  = readTableValues("pump",  configData.pumpLvCount);
+    configData.tables.house = readTableValues("house", configData.houseLvCount);
+    configData.tables.door  = readTableValues("door",  configData.doorLvCount);
+
+    localStorage.setItem("weplayConfig", JSON.stringify(configData));
     alert("Đã lưu config!");
 }
+
 
 function loadConfig(){
     let data = localStorage.getItem("weplayConfig");
@@ -215,13 +234,32 @@ function loadConfig(){
 
     data = JSON.parse(data);
 
-    treeLvCount.value = data.treeLvCount;
-    pumpLvCount.value = data.pumpLvCount;
+    treeLvCount.value  = data.treeLvCount;
+    pumpLvCount.value  = data.pumpLvCount;
     houseLvCount.value = data.houseLvCount;
-    doorLvCount.value = data.doorLvCount;
+    doorLvCount.value  = data.doorLvCount;
 
-    tables.innerHTML = data.tables;
+    // tạo lại bảng
+    generateTables();
+
+    function fillTable(name,arr){
+        arr.forEach((row,i)=>{
+            let idx=i+1;
+            document.getElementById(`${name}_gold_${idx}`).value    = row.gold;
+            document.getElementById(`${name}_water_${idx}`).value   = row.water;
+            document.getElementById(`${name}_prod_${idx}`).value    = row.prod;
+            document.getElementById(`${name}_doorReq_${idx}`).value = row.doorReq;
+        });
+    }
+
+    fillTable("tree",  data.tables.tree);
+    fillTable("pump",  data.tables.pump);
+    fillTable("house", data.tables.house);
+    fillTable("door",  data.tables.door);
+
+    alert("Đã tải config!");
 }
+
 
 // ===== FORMAT TIME =====
 function formatTime(sec){
@@ -433,6 +471,7 @@ function render(){
 
 
 </script>
+
 
 
 
