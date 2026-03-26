@@ -209,6 +209,11 @@ Gun levels <input id="gunLvCount" value="5">
 <div class="card">
 <h3>Actions</h3>
 <div style="margin-bottom:10px">
+    <b>📊 Tổng tài nguyên</b><br>
+    💰 Tổng cá: <span id="totalGold">0</span><br>
+    💧 Tổng nước: <span id="totalWater">0</span>
+</div>
+<div style="margin-bottom:10px">
     <button onclick="saveVersion()">💾 Save Version</button>
     <button onclick="exportVersion()">⬇ Export Version</button>
     <input type="file" onchange="importVersion(event)">
@@ -536,16 +541,17 @@ function startSim(){
     console.log("CONFIG:", CONFIG); // debug
 
     state={
-        time:8,
-        gold:0,
-        water:0,
-        houseLv:1,
-        doorLv:1,
-        trees:[],
-        pumps:[],
-        guns:[]
-    };
-
+    time:8,
+    gold:0,
+    water:0,
+    totalGold:0,   // ⭐ thêm
+    totalWater:0,  // ⭐ thêm
+    houseLv:1,
+    doorLv:1,
+    trees:[],
+    pumps:[],
+    guns:[]
+};
     history=[JSON.parse(JSON.stringify(state))];
 
     simulator.classList.remove("hidden");
@@ -576,6 +582,8 @@ function produceResources(){
 
     state.gold += goldGain;
     state.water += waterGain;
+    state.totalGold += goldGain;
+	state.totalWater += waterGain;
 }
 
 // ===== TIME CONTROL =====
@@ -752,6 +760,8 @@ function renderInstant(){
     let gunCountByLevel = new Array(CONFIG.gun.length).fill(0);
     state.guns.forEach(lv => gunCountByLevel[lv-1]++);
     document.getElementById("gunStatus").innerText =
+    document.getElementById("totalGold").innerText = state.totalGold.toFixed(1);
+	document.getElementById("totalWater").innerText = state.totalWater.toFixed(1);
         gunCountByLevel.map((c,i)=>`L${i+1}:${c}`).join(" | ");
 
     lastRow.innerHTML = `
@@ -820,6 +830,8 @@ function render(){
 state.guns.forEach(lv => gunCountByLevel[lv-1]++);
 
 document.getElementById("gunStatus").innerText =
+document.getElementById("totalGold").innerText = state.totalGold.toFixed(1);
+document.getElementById("totalWater").innerText = state.totalWater.toFixed(1);
     gunCountByLevel.map((c,i)=>`L${i+1}:${c}`).join(" | ");
 
     r.innerHTML = `
