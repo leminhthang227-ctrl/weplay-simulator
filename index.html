@@ -208,6 +208,14 @@ Gun levels <input id="gunLvCount" value="5">
 
 <div class="card">
 <h3>Actions</h3>
+<div style="margin-bottom:10px">
+    <button onclick="saveVersion()">💾 Save Version</button>
+</div>
+
+<div class="card">
+    <h3>📂 Versions</h3>
+    <div id="versionList"></div>
+</div>
 <div class="card">
 <h3>🔫 Trang bị súng</h3>
 
@@ -264,6 +272,85 @@ Gun levels <input id="gunLvCount" value="5">
 let CONFIG = {};
 let history=[];
 let state;
+let versions = [];
+const DEFAULT_CONFIG = {
+  treeLvCount: 4,
+  pumpLvCount: 10,
+  houseLvCount: 15,
+  doorLvCount: 15,
+  gunLvCount: 15,
+  tables: {
+    tree: [
+      {gold:0,water:17,prod:10,doorReq:1},
+      {gold:0,water:93,prod:50,doorReq:1},
+      {gold:0,water:488,prod:300,doorReq:4},
+      {gold:0,water:3615,prod:2000,doorReq:10}
+    ],
+    pump: [
+      {gold:20,water:0,prod:1,doorReq:1},
+      {gold:154,water:0,prod:2,doorReq:1},
+      {gold:288,water:0,prod:4,doorReq:1},
+      {gold:790,water:0,prod:6,doorReq:5},
+      {gold:1078,water:0,prod:10,doorReq:10},
+      {gold:3873,water:0,prod:16,doorReq:11},
+      {gold:7370,water:0,prod:28,doorReq:12},
+      {gold:17490,water:0,prod:42,doorReq:13},
+      {gold:31980,water:0,prod:64,doorReq:14},
+      {gold:88957,water:0,prod:128,doorReq:15}
+    ],
+    house: [
+      {gold:0,water:0,prod:1,doorReq:1},
+      {gold:8,water:0,prod:2,doorReq:1},
+      {gold:15,water:0,prod:4,doorReq:2},
+      {gold:20,water:0,prod:8,doorReq:3},
+      {gold:35,water:0,prod:16,doorReq:5},
+      {gold:43,water:0,prod:32,doorReq:6},
+      {gold:79,water:3,prod:64,doorReq:7},
+      {gold:215,water:15,prod:128,doorReq:8},
+      {gold:518,water:23,prod:256,doorReq:9},
+      {gold:1422,water:54,prod:512,doorReq:10},
+      {gold:4590,water:135,prod:1024,doorReq:11},
+      {gold:13941,water:540,prod:2048,doorReq:12},
+      {gold:26532,water:864,prod:4096,doorReq:13},
+      {gold:62964,water:1512,prod:8192,doorReq:14},
+      {gold:115128,water:2268,prod:16384,doorReq:15}
+    ],
+    door: [
+      {gold:0,water:0,prod:0,doorReq:1},
+      {gold:6,water:0,prod:0,doorReq:1},
+      {gold:63,water:0,prod:0,doorReq:1},
+      {gold:198,water:0,prod:0,doorReq:1},
+      {gold:369,water:0,prod:0,doorReq:1},
+      {gold:612,water:0,prod:0,doorReq:1},
+      {gold:1284,water:105,prod:0,doorReq:1},
+      {gold:2490,water:157,prod:0,doorReq:1},
+      {gold:4527,water:180,prod:0,doorReq:1},
+      {gold:16680,water:450,prod:0,doorReq:1},
+      {gold:40032,water:900,prod:0,doorReq:1},
+      {gold:69264,water:1440,prod:0,doorReq:1},
+      {gold:152028,water:2520,prod:0,doorReq:1},
+      {gold:271656,water:3780,prod:0,doorReq:1},
+      {gold:729431,water:9035,prod:0,doorReq:1}
+    ],
+    gun: [
+      {gold:3,water:0,prod:0,doorReq:1},
+      {gold:16,water:0,prod:0,doorReq:1},
+      {gold:56,water:0,prod:0,doorReq:1},
+      {gold:102,water:0,prod:0,doorReq:1},
+      {gold:170,water:0,prod:0,doorReq:1},
+      {gold:287,water:0,prod:0,doorReq:1},
+      {gold:518,water:21,prod:0,doorReq:1},
+      {gold:848,water:41,prod:0,doorReq:1},
+      {gold:2380,water:59,prod:0,doorReq:1},
+      {gold:6672,water:122,prod:0,doorReq:1},
+      {gold:7778,water:187,prod:0,doorReq:1},
+      {gold:21115,water:336,prod:0,doorReq:1},
+      {gold:37730,water:504,prod:0,doorReq:1},
+      {gold:107642,water:1250,prod:0,doorReq:1},
+      {gold:189227,water:5120,prod:0,doorReq:1}
+    ]
+  }
+};
 
 // ===== INPUT TABLE FUNCTIONS (bị thiếu) =====
 function makeLevelTable(name,count){
@@ -292,14 +379,13 @@ function makeLevelTable(name,count){
 }
 
 function generateTables(){
-    tables.innerHTML =
+    document.getElementById("tables").innerHTML =
         makeLevelTable("tree",+treeLvCount.value)+
         makeLevelTable("pump",+pumpLvCount.value)+
         makeLevelTable("house",+houseLvCount.value)+
         makeLevelTable("door",+doorLvCount.value)+
         makeLevelTable("gun",+gunLvCount.value);
 }
-
 
 
 function readTable(name,count){
@@ -425,30 +511,46 @@ function formatTime(sec){
 }
 
 function startSim(){
-    CONFIG.tree  = readTable("tree",+treeLvCount.value);
-	CONFIG.pump  = readTable("pump",+pumpLvCount.value);
-	CONFIG.house = readTable("house",+houseLvCount.value);
-	CONFIG.door  = readTable("door",+doorLvCount.value);
-	CONFIG.gun = readTable("gun",+gunLvCount.value);
 
+	if(!document.getElementById("tree_gold_1")){
+        alert("Chưa bấm 'Tạo bảng nhập liệu'!");
+        return;
+    }
+    
+    versions = [];
+    renderVersionList();
+
+    // đọc config
+    CONFIG = {
+        tree: readTable("tree",+treeLvCount.value),
+        pump: readTable("pump",+pumpLvCount.value),
+        house: readTable("house",+houseLvCount.value),
+        door: readTable("door",+doorLvCount.value),
+        gun: readTable("gun",+gunLvCount.value).length
+      ? readTable("gun",+gunLvCount.value)
+      : DEFAULT_CONFIG.tables.gun
+    };
+
+    console.log("CONFIG:", CONFIG); // debug
 
     state={
-    time:8,
-    gold:0,
-    water:0,
-    houseLv:1,
-    doorLv:1,
-    trees:[],
-    pumps:[],
-    guns:[]
-};
-
+        time:8,
+        gold:0,
+        water:0,
+        houseLv:1,
+        doorLv:1,
+        trees:[],
+        pumps:[],
+        guns:[]
+    };
 
     history=[JSON.parse(JSON.stringify(state))];
 
     simulator.classList.remove("hidden");
 
-    populateUpgradeSelectors();   // ⭐ đặt ở đây mới đúng
+    // 🔥 QUAN TRỌNG: delay 1 tick để DOM ổn định
+    populateUpgradeSelectors();
+
     render();
 }
 
@@ -597,6 +699,9 @@ function upgradePump(){
 }
 
 function populateUpgradeSelectors(){
+	
+    console.log("CONFIG.gun:", CONFIG.gun);
+
     let treeSel = document.getElementById("treeUpgradeSelect");
     let pumpSel = document.getElementById("pumpUpgradeSelect");
 
@@ -611,7 +716,6 @@ function populateUpgradeSelectors(){
         pumpSel.innerHTML += `<option value="${i}">Pump Lv ${i}</option>`;
     }
 
-    // ===== THÊM ĐOẠN NÀY NGAY TRƯỚC DẤU } =====
     let buySel=document.getElementById("gunBuySelect");
     let upSel=document.getElementById("gunUpgradeSelect");
 
@@ -623,7 +727,6 @@ function populateUpgradeSelectors(){
         upSel.innerHTML += `<option value="${i}">Gun Lv ${i}</option>`;
     }
 }
-
 // ===== RENDER =====
 function renderInstant(){
     // nếu chưa có dòng timeline thì tạo dòng đầu
@@ -725,6 +828,100 @@ document.getElementById("gunStatus").innerText =
     <td>${pumpText}</td>
     <td>${state.houseLv}</td>
     <td>${state.doorLv}</td>`;
+}
+
+function renderVersionList(){
+
+    let div = document.getElementById("versionList");
+    div.innerHTML = "";
+
+    versions.forEach((v, i)=>{
+
+        let btn = document.createElement("button");
+        btn.innerText = `Version ${i+1} - ${formatTime(v.time)}`;
+
+        btn.style.display = "block";
+        btn.style.marginBottom = "5px";
+        btn.style.width = "100%";
+
+        btn.onclick = () => loadVersion(i);
+
+        div.appendChild(btn);
+    });
+}
+
+function saveVersion(){
+
+    let snapshot = {
+        time: state.time,
+        state: JSON.parse(JSON.stringify(state)),
+        history: JSON.parse(JSON.stringify(history))
+    };
+
+    versions.push(snapshot);
+
+    renderVersionList();
+}
+
+window.addEventListener("load", () => {
+
+    let saved = localStorage.getItem("weplayConfig");
+
+    if(saved){
+        loadConfig();
+    } else {
+
+        treeLvCount.value  = DEFAULT_CONFIG.treeLvCount;
+        pumpLvCount.value  = DEFAULT_CONFIG.pumpLvCount;
+        houseLvCount.value = DEFAULT_CONFIG.houseLvCount;
+        doorLvCount.value  = DEFAULT_CONFIG.doorLvCount;
+        gunLvCount.value   = DEFAULT_CONFIG.gunLvCount;
+
+        generateTables();
+
+        function fill(name, arr){
+            arr.forEach((row,i)=>{
+                let idx = i+1;
+                document.getElementById(`${name}_gold_${idx}`).value = row.gold;
+                document.getElementById(`${name}_water_${idx}`).value = row.water;
+                document.getElementById(`${name}_prod_${idx}`).value = row.prod;
+                document.getElementById(`${name}_doorReq_${idx}`).value = row.doorReq;
+            });
+        }
+
+        fill("tree",  DEFAULT_CONFIG.tables.tree);
+        fill("pump",  DEFAULT_CONFIG.tables.pump);
+        fill("house", DEFAULT_CONFIG.tables.house);
+        fill("door",  DEFAULT_CONFIG.tables.door);
+        fill("gun",   DEFAULT_CONFIG.tables.gun);
+    }
+});
+
+function loadVersion(index){
+
+    let v = versions[index];
+
+    state = JSON.parse(JSON.stringify(v.state));
+    history = JSON.parse(JSON.stringify(v.history));
+
+    timeline.innerHTML = `
+    <tr>
+        <th>Time</th>
+        <th>Gold</th>
+        <th>Water</th>
+        <th>Trees</th>
+        <th>Pumps</th>
+        <th>House</th>
+        <th>Door</th>
+    </tr>`;
+
+    history.forEach(s=>{
+        state = JSON.parse(JSON.stringify(s));
+        render();
+    });
+
+    // ⭐ FIX QUAN TRỌNG
+    populateUpgradeSelectors();
 }
 
 // DRAG TIME WINDOW (fix load DOM)
