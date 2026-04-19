@@ -239,6 +239,7 @@ Gun levels <input id="gunLvCount" value="5">
 
 <div class="actionGrid">
 
+<button class="actionBtn" onclick="doGacha()">🎰</button>
 <button class="actionBtn" onclick="buyTree()">🌳</button>
 <button class="actionBtn" onclick="buyPump()">💧</button>
 
@@ -280,6 +281,7 @@ let CONFIG = {};
 let history=[];
 let state;
 let versions = [];
+const GACHA_COSTS = [20, 800, 5500, 17000, 51000, 102000, 306000, 918000];
 const DEFAULT_CONFIG = {
   treeLvCount: 4,
   pumpLvCount: 10,
@@ -550,7 +552,8 @@ function startSim(){
     doorLv:1,
     trees:[],
     pumps:[],
-    guns:[]
+    guns:[],
+    gachaCount:0,
 };
     history=[JSON.parse(JSON.stringify(state))];
 
@@ -759,9 +762,14 @@ function renderInstant(){
 
     let gunCountByLevel = new Array(CONFIG.gun.length).fill(0);
     state.guns.forEach(lv => gunCountByLevel[lv-1]++);
-    document.getElementById("gunStatus").innerText =
     document.getElementById("totalGold").innerText = state.totalGold.toFixed(1);
-	document.getElementById("totalWater").innerText = state.totalWater.toFixed(1);
+document.getElementById("totalWater").innerText = state.totalWater.toFixed(1);
+
+document.getElementById("gachaStatus").innerText =
+    state.gachaCount + "/" + GACHA_COSTS.length;
+
+document.getElementById("gunStatus").innerText =
+    gunCountByLevel.map((c,i)=>`L${i+1}:${c}`).join(" | ");
         gunCountByLevel.map((c,i)=>`L${i+1}:${c}`).join(" | ");
 
     lastRow.innerHTML = `
@@ -784,6 +792,28 @@ function buyGun(){
         state.guns.push(lv);
         renderInstant();
     }
+}
+
+function doGacha(){
+
+    let index = state.gachaCount;
+
+    if(index >= GACHA_COSTS.length){
+        alert("Đã hết lượt gacha!");
+        return;
+    }
+
+    let cost = GACHA_COSTS[index];
+
+    if(state.gold < cost){
+        alert("Không đủ gold!");
+        return;
+    }
+
+    state.gold -= cost;
+    state.gachaCount++;
+
+    renderInstant();
 }
 
 function upgradeGun(){
@@ -829,9 +859,14 @@ function render(){
 	let gunCountByLevel = new Array(CONFIG.gun.length).fill(0);
 state.guns.forEach(lv => gunCountByLevel[lv-1]++);
 
-document.getElementById("gunStatus").innerText =
 document.getElementById("totalGold").innerText = state.totalGold.toFixed(1);
 document.getElementById("totalWater").innerText = state.totalWater.toFixed(1);
+
+document.getElementById("gachaStatus").innerText =
+    state.gachaCount + "/" + GACHA_COSTS.length;
+
+document.getElementById("gunStatus").innerText =
+    gunCountByLevel.map((c,i)=>`L${i+1}:${c}`).join(" | ");
     gunCountByLevel.map((c,i)=>`L${i+1}:${c}`).join(" | ");
 
     r.innerHTML = `
