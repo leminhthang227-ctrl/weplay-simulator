@@ -600,11 +600,16 @@ function nextSecond(){
 
 function prevSecond(){
     if(history.length<=1) return;
-    history.pop();
-    state=JSON.parse(JSON.stringify(history[history.length-1]));
-    timeline.deleteRow(-1);
-}
 
+    history.pop();
+    state = JSON.parse(JSON.stringify(history[history.length-1]));
+
+    // ❌ xóa dòng cuối
+    timeline.deleteRow(-1);
+
+    // ✅ QUAN TRỌNG: render lại dòng cuối đúng state
+    renderInstant();
+}
 // ===== ACTIONS =====
 function buyTree(){
     let cfg = CONFIG.tree[0]; // mua cây lv1
